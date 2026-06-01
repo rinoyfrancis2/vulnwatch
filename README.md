@@ -114,7 +114,7 @@ N8N cannot run these commands directly against its own host. Instead, VulnWatch 
 │ WORKFLOW 4  │          │    WORKFLOW 3        │
 │ ALERT SYSTEM│          │   HITL HANDLER       │
 │ Auto email  │          │ Critical + no patch  │
-│ for CVSS>7  │          │ → Email Rinoy        │
+│ for CVSS>7  │          │ → Email owner        │
 │ + patch avail│         │ → Wait for decision  │
 └─────────────┘          │ → Apply/Monitor/Ignore│
                          └─────────────────────┘
@@ -157,7 +157,7 @@ The core intelligence engine. Receives scan results, enriches with CVSS/EPSS/KEV
 ---
 
 ### Workflow 3 — HITL Handler
-Handles the highest-risk CVEs where no patch exists. Emails Rinoy with full context and waits for a human decision.
+Handles the highest-risk CVEs where no patch exists. Emails the owner with full context and waits for a human decision.
 
 ![HITL Handler Workflow](images/HITL%20Handler%20workflow%20.png)
 
