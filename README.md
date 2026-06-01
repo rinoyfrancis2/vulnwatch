@@ -12,7 +12,7 @@ Every server connected to the internet has software running on it — a web serv
 VulnWatch watches your server 24 hours a day, 7 days a week. Every night it scans what software is running, cross-checks against every known publicly disclosed vulnerability, and tells you: *"You have a critical weakness — here is exactly how an attacker would exploit it, and here is how to fix it."* No human involvement required until a decision is needed.
 
 **For a technical person:**
-VulnWatch is a fully autonomous, multi-agent vulnerability intelligence pipeline running on N8N. It performs nightly VPS scans via SSH, enriches findings with CVSS/EPSS/KEV/PoC data, and routes each CVE through a 5-agent LLM orchestration chain (Mistral → Claude Sonnet → Claude Haiku) that validates contextual exploitability, fetches patch data, and triggers HITL or auto-alert based on a composite risk scoring model. All data stays on the VPS — no external database services.
+VulnWatch is a fully autonomous, multi-agent vulnerability intelligence pipeline running on N8N. It performs nightly VPS scans via SSH, enriches findings with CVSS/EPSS/KEV/PoC data, and routes each CVE through a 3-agent Claude AI chain (Analysis → Validation → Patch) that validates contextual exploitability, fetches patch data, and triggers HITL or auto-alert based on a composite risk scoring model. All data stays on the VPS — no external database services.
 
 ---
 
@@ -132,11 +132,11 @@ N8N cannot run these commands directly against its own host. Instead, VulnWatch 
 
 | Condition | Action |
 |---|---|
-| CVSS > 9 + No patch + KEV listed | HITL required — critical email sent immediately |
-| CVSS > 9 + No patch | HITL required — waiting for human decision |
-| CVSS > 7 + EPSS > 0.1 + patch available | Auto alert + full patch instructions |
-| Not exploitable on this config | Stored silently — no noise |
-| CVSS < 7 | Stored silently — included in Sunday digest only |
+| CVSS ≥ 9 + No patch | HITL required — critical email sent immediately |
+| CVSS ≥ 9 + KEV listed | HITL required — actively exploited in the wild |
+| CVSS ≥ 7 + exploitable on this system | Auto alert + full patch instructions |
+| CVSS ≥ 7 + not exploitable on this config | Stored silently — no noise |
+| CVSS < 7 | Filtered out before processing |
 
 ---
 
@@ -150,7 +150,7 @@ Runs every night at midnight. SSHes into the VPS, scans all installed packages, 
 ---
 
 ### Workflow 2 — CVE Analysis Pipeline
-The core intelligence engine. Receives scan results, enriches with CVSS/EPSS/KEV/PoC data, routes through 5 AI agents, stores results, and triggers alerts.
+The core intelligence engine. Receives scan results, enriches with CVSS/EPSS/KEV/PoC data, routes through 3 Claude AI agents, stores results, and triggers alerts.
 
 ![CVE Analysis Workflow](images/CVE%20Analysis%20workflow.png)
 
@@ -223,7 +223,6 @@ Every Sunday at 9am, sends a digest of all low and medium severity CVEs from the
 | EPSS (FIRST.org) | Real-world exploitation probability per CVE | Free |
 | CISA KEV | Confirmed active exploitation in the wild | Free |
 | GitHub Search API | Public PoC exploit code | Free (with token) |
-| NVD (NIST) | CVE descriptions and metadata | Free |
 
 **Total running cost: ~$9–12/month** (N8N VPS + LLM API calls via OpenRouter)
 
@@ -231,17 +230,10 @@ Every Sunday at 9am, sends a digest of all low and medium severity CVEs from the
 
 ## Why This Is Relevant
 
-### For the job market:
-- Demonstrates **real production system** running on live infrastructure — not a demo
-- Shows **multi-agent LLM orchestration** with genuine task routing justification
-- Uses **MSc Cybersecurity knowledge** in a practical, deployed system
-- Covers **RAG, HITL, multi-LLM routing, PostgreSQL + pgvector, SSH, API integration** in one project
-- Addresses a **real gap** in affordable vulnerability intelligence tooling
-
-### For real-world value:
 - A solo developer or small team cannot afford Rapid7 or Tenable
 - VulnWatch gives the same intelligence layer at 1% of the cost
 - The contextual exploitability check is the feature that commercial tools at this price point do not have — it eliminates false alarm fatigue
+- Runs continuously with zero manual effort — every fix recommendation includes the exact shell command to run
 
 ---
 
@@ -272,13 +264,6 @@ VulnWatch/
 │   ├── VulnWatch - HITL Handler.json           # Workflow 3
 │   ├── VulnWatch - Alert System.json           # Workflow 4
 │   └── VulnWatch — Weekly Summary.json         # Workflow 5
-├── docs/
-│   ├── architecture.md                         # Full architecture detail
-│   ├── n8n_node_guide.md                       # Step-by-step N8N build guide
-│   ├── database_setup.md                       # PostgreSQL schema + setup
-│   ├── api_reference.md                        # All external API endpoints
-│   ├── agent_prompts.md                        # LLM prompts for each agent
-│   └── test_cases.md                           # Test scenarios
 ├── images/                                     # Workflow screenshots + alert samples
 └── README.md
 ```
