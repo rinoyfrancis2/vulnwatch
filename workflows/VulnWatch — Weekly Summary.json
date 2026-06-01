@@ -1,0 +1,132 @@
+{
+  "name": "VulnWatch — Weekly Summary",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "74b82c80-9b53-40dc-91dc-515d9645cb72",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  cve_id,\n  affected_software,\n  affected_version,\n  CAST(cvss_score AS TEXT) AS cvss_score,\n  CAST(epss_score AS TEXT) AS epss_score,\n  kev_listed,\n  exploitable_on_this_system,\n  patch_available,\n  fixed_version,\n  hitl_required,\n  hitl_decision,\n  alert_sent,\n  exploitability_reason,\n  TO_CHAR(created_at, 'DD Mon YYYY') AS scan_date\nFROM cve_analyses\nWHERE created_at >= NOW() - INTERVAL '7 days'\nORDER BY cvss_score DESC, created_at DESC",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3e9823cd-90c0-429e-bdc2-8b49fe524755",
+      "name": "Fetch Week's CVEs",
+      "credentials": {
+        "postgres": {
+          "id": "O3yWhcN6VoBt8OR5",
+          "name": "VulnWatch Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const cves = $input.all().map(i => i.json);\n\nconst weekStart = new Date();\nweekStart.setDate(weekStart.getDate() - 7);\nconst fmt = d => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });\nconst weekLabel = fmt(weekStart);\nconst today = fmt(new Date());\n\nconst hitlCves       = cves.filter(c => c.hitl_required);\nconst alertCves      = cves.filter(c => !c.hitl_required && c.exploitable_on_this_system && c.alert_sent);\nconst silentHighCves = cves.filter(c => !c.hitl_required && !c.exploitable_on_this_system);\nconst total = cves.length;\n\nfunction cveRow(c) {\n  const cvss = parseFloat(c.cvss_score) || 0;\n  const color = cvss >= 9 ? '#b71c1c' : cvss >= 7 ? '#e65100' : '#1565c0';\n  const patchCell = c.patch_available\n    ? `<span style=\"color:#2e7d32\">✓ ${c.fixed_version || 'patch available'}</span>`\n    : `<span style=\"color:#b71c1c\">✗ no patch</span>`;\n  const kevBadge = c.kev_listed\n    ? `<span style=\"background:#b71c1c;color:#fff;padding:1px 5px;border-radius:3px;font-size:11px;margin-left:4px\">KEV</span>`\n    : '';\n  const hitlStatus = c.hitl_decision\n    ? `<span style=\"color:#666;font-size:12px\"> → ${c.hitl_decision}</span>`\n    : '';\n  return `<tr>\n    <td style=\"padding:8px;border-bottom:1px solid #eee\">${c.cve_id}${kevBadge}${hitlStatus}</td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee\">${c.affected_software} ${c.affected_version || ''}</td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee;color:${color};font-weight:bold\">${cvss.toFixed(1)}</td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee\">${patchCell}</td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee;color:#555;font-size:12px\">${(c.exploitability_reason || '—').substring(0, 120)}</td>\n  </tr>`;\n}\n\nfunction section(title, color, rows) {\n  if (!rows.length) return '';\n  return `\n    <h3 style=\"color:${color};margin:28px 0 8px;font-size:15px\">${title} (${rows.length})</h3>\n    <table style=\"width:100%;border-collapse:collapse;font-size:13px\">\n      <tr style=\"background:#f5f5f5\">\n        <th style=\"padding:8px;text-align:left\">CVE</th>\n        <th style=\"padding:8px;text-align:left\">Software</th>\n        <th style=\"padding:8px;text-align:left\">CVSS</th>\n        <th style=\"padding:8px;text-align:left\">Patch</th>\n        <th style=\"padding:8px;text-align:left\">Reason</th>\n      </tr>\n      ${rows.map(cveRow).join('')}\n    </table>`;\n}\n\nconst emptyMsg = total === 0\n  ? `<p style=\"color:#2e7d32;font-size:15px\">✓ No CVEs detected this week. VPS appears clean.</p>`\n  : '';\n\nconst subject = hitlCves.length > 0\n  ? `VulnWatch: ${hitlCves.length} HITL decision(s) pending — week of ${weekLabel}`\n  : alertCves.length > 0\n  ? `VulnWatch: ${alertCves.length} exploitable CVE(s) this week — ${today}`\n  : total > 0\n  ? `VulnWatch Weekly: ${total} CVE(s) found, none exploitable — ${today}`\n  : `VulnWatch Weekly: All clear — ${today}`;\n\nconst html = `<!DOCTYPE html>\n<html>\n<body style=\"font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:20px;color:#333\">\n  <div style=\"background:#1565c0;padding:16px 20px;border-radius:6px 6px 0 0\">\n    <h2 style=\"color:white;margin:0;font-size:18px\">VulnWatch Weekly Digest</h2>\n    <p style=\"color:#90caf9;margin:4px 0 0;font-size:13px\">${weekLabel} &rarr; ${today}</p>\n  </div>\n  <div style=\"border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 6px 6px\">\n    <table style=\"width:100%;text-align:center;margin-bottom:20px\">\n      <tr>\n        <td style=\"padding:14px\">\n          <div style=\"font-size:32px;font-weight:bold;color:#1565c0\">${total}</div>\n          <div style=\"font-size:12px;color:#777;margin-top:2px\">Total CVEs</div>\n        </td>\n        <td style=\"padding:14px\">\n          <div style=\"font-size:32px;font-weight:bold;color:#b71c1c\">${hitlCves.length}</div>\n          <div style=\"font-size:12px;color:#777;margin-top:2px\">Needed Your Decision</div>\n        </td>\n        <td style=\"padding:14px\">\n          <div style=\"font-size:32px;font-weight:bold;color:#e65100\">${alertCves.length}</div>\n          <div style=\"font-size:12px;color:#777;margin-top:2px\">Auto-Alerted</div>\n        </td>\n        <td style=\"padding:14px\">\n          <div style=\"font-size:32px;font-weight:bold;color:#2e7d32\">${silentHighCves.length}</div>\n          <div style=\"font-size:12px;color:#777;margin-top:2px\">Non-Exploitable</div>\n        </td>\n      </tr>\n    </table>\n    ${emptyMsg}\n    ${section('🚨 Required Your Decision (HITL)', '#b71c1c', hitlCves)}\n    ${section('⚠️ Auto-Alerted — Exploitable on This System', '#e65100', alertCves)}\n    ${section('✓ High CVSS — Not Exploitable on This Config', '#2e7d32', silentHighCves)}\n    <p style=\"color:#bbb;font-size:11px;margin-top:28px;padding-top:12px;border-top:1px solid #eee\">\n      VulnWatch &nbsp;|&nbsp; Autonomous CVE Monitoring &nbsp;|&nbsp; All data stays on VPS\n    </p>\n  </div>\n</body>\n</html>`;\n\nreturn [{ json: { html, subject, total, hitl_count: hitlCves.length, alert_count: alertCves.length } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "b64ba3c7-d5b9-4bd2-8f61-095a28fd8c52",
+      "name": "Build Weekly Digest HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_EMAIL@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "af2b86ee-9e18-487f-b21b-d2aabdd77999",
+      "name": "Send Weekly Digest",
+      "webhookId": "1d28ba08-05a1-4b89-9e0c-384ff63976a6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EWniJmxdb6qvURGg",
+          "name": "Gmail OAuth API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Week's CVEs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Week's CVEs": {
+      "main": [
+        [
+          {
+            "node": "Build Weekly Digest HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Weekly Digest HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "255dd36c-d074-405c-a1dd-e70a1e0694df",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "23b36ea15f13856ccbe210d20171d39de2bd8cd2a47658ef3391b4160d9fda3e"
+  },
+  "id": "zXJK7hSuCbgviKtf",
+  "tags": []
+}

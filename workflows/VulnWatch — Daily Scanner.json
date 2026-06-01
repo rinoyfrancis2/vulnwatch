@@ -1,0 +1,379 @@
+{
+  "name": "VulnWatch — Daily Scanner",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -688,
+        -16
+      ],
+      "id": "95bc2dcb-0fd1-448a-b819-5b15c85bcbd9",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": " nmap -sV -p- localhost --open -oG -"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        -16
+      ],
+      "id": "ee150a94-34c9-477a-bef2-90ef2c5a76a2",
+      "name": "Scan — Open Ports",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "zgygerjNeON8vxqR",
+          "name": "VulnWatch SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "dpkg -l | awk 'NR>5 {print $2, $3}'"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -16
+      ],
+      "id": "c75bd984-a805-4c3b-b0d7-793809d0659b",
+      "name": "Scan — Installed Packages",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "zgygerjNeON8vxqR",
+          "name": "VulnWatch SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "pip list --format=json"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -16
+      ],
+      "id": "98be7574-b42e-4a9d-b1ef-f020ff7acafc",
+      "name": "Scan — Python Packages",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "zgygerjNeON8vxqR",
+          "name": "VulnWatch SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=docker ps --no-trunc"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        208,
+        -16
+      ],
+      "id": "5e5ba109-a77e-40c4-9cea-a4974bf549d4",
+      "name": "Scan — Docker Containers",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "zgygerjNeON8vxqR",
+          "name": "VulnWatch SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "lsb_release -a 2>/dev/null || cat /etc/os-release"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        432,
+        -16
+      ],
+      "id": "57bad5d4-ba4a-440c-a9e3-de54d83a35a0",
+      "name": "Scan — OS Version",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "zgygerjNeON8vxqR",
+          "name": "VulnWatch SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const openPorts = $(\"Scan — Open Ports\").first().json.stdout;\nconst packages = $(\"Scan — Installed Packages\").first().json.stdout;\nconst pythonPackages = $(\"Scan — Python Packages\").first().json.stdout;\nconst dockerRaw = $(\"Scan — Docker Containers\").first().json.stdout;\nconst osRaw = $(\"Scan — OS Version\").first().json.stdout;\n\n// Parse open ports\nconst portMatches = openPorts.matchAll(/(\\d+)\\/open\\/tcp\\/\\/(\\w+)\\/\\/([^\\/,]+)/g);\nconst ports = [];\nfor (const match of portMatches) {\n  ports.push({\n    port: parseInt(match[1]),\n    service: match[2],\n    version: match[3].trim()\n  });\n}\n\n// Parse installed packages\nconst pkgList = packages.trim().split('\\n').map(line => {\n  const parts = line.trim().split(/\\s+/);\n  return { name: parts[0], version: parts[1] || 'unknown' };\n}).filter(p => p.name);\n\n// Parse python packages\nlet pyPkgs = [];\ntry {\n  pyPkgs = JSON.parse(pythonPackages);\n} catch(e) {\n  pyPkgs = [];\n}\n\n// Parse docker containers\nconst dockerLines = dockerRaw.trim().split('\\n').slice(1);\nconst containers = dockerLines.map(line => {\n  const parts = line.trim().split(/\\s{2,}/);\n  return {\n    id: parts[0]?.substring(0, 12),\n    image: parts[1],\n    status: parts[4]\n  };\n}).filter(c => c.image);\n\n// Parse OS version\nconst osMatch = osRaw.match(/Description:\\s*(.+)/);\nconst osVersion = osMatch ? osMatch[1].trim() : osRaw.trim();\n\nreturn [{\n  json: {\n    scan_date: new Date().toISOString(),\n    os_version: osVersion,\n    open_ports: JSON.stringify(ports),\n    installed_packages: JSON.stringify(pkgList),\n    python_packages: JSON.stringify(pyPkgs),\n    running_services: JSON.stringify(containers)\n  }\n}];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        -16
+      ],
+      "id": "e8398287-c77b-4439-8624-def6a4334d22",
+      "name": "Parse Results"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "vps_scan_results",
+          "mode": "list",
+          "cachedResultName": "vps_scan_results"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "id": 0,
+            "scan_date": "={{ $json.scan_date }}",
+            "os_version": "={{ $json.os_version }}",
+            "python_packages": "={{ $json.python_packages }}",
+            "running_services": "={{ $json.running_services }}\n",
+            "installed_packages": "={{ $json.installed_packages }}",
+            "open_ports": "={{ $json.open_ports }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "scan_date",
+              "displayName": "scan_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "open_ports",
+              "displayName": "open_ports",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "running_services",
+              "displayName": "running_services",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "installed_packages",
+              "displayName": "installed_packages",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "python_packages",
+              "displayName": "python_packages",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "docker_containers",
+              "displayName": "docker_containers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "os_version",
+              "displayName": "os_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        -16
+      ],
+      "id": "5d43d1c9-cccc-4d75-975e-ba757dd50c4a",
+      "name": "Store Scan Snapshot",
+      "credentials": {
+        "postgres": {
+          "id": "O3yWhcN6VoBt8OR5",
+          "name": "VulnWatch Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_N8N_DOMAIN/webhook-test/cve-analysis",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1104,
+        -16
+      ],
+      "id": "ec402daa-a2a2-4cd6-a64d-60815f84f248",
+      "name": "Trigger CVE Analysis"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Scan — Open Ports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan — Open Ports": {
+      "main": [
+        [
+          {
+            "node": "Scan — Installed Packages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan — Installed Packages": {
+      "main": [
+        [
+          {
+            "node": "Scan — Python Packages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan — Python Packages": {
+      "main": [
+        [
+          {
+            "node": "Scan — Docker Containers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan — Docker Containers": {
+      "main": [
+        [
+          {
+            "node": "Scan — OS Version",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan — OS Version": {
+      "main": [
+        [
+          {
+            "node": "Parse Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Results": {
+      "main": [
+        [
+          {
+            "node": "Store Scan Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Scan Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Trigger CVE Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3a59b879-41c8-48c7-88f1-41b67f072da9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "23b36ea15f13856ccbe210d20171d39de2bd8cd2a47658ef3391b4160d9fda3e"
+  },
+  "id": "fZXpShBl8GoO8ypQ",
+  "tags": []
+}

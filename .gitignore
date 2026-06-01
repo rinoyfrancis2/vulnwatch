@@ -1,0 +1,15 @@
+# Claude Code project instructions — never push to GitHub
+CLAUDE.md
+
+# Internal build notes — not for public
+progress.md
+
+# Internal documentation — not for public
+docs/
+
+# Environment variables
+.env
+.env.*
+
+# OS files
+.DS_Store
