@@ -1,0 +1,1137 @@
+{
+  "name": "VulnWatch - HITL Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        80
+      ],
+      "id": "da97b054-d3cb-4c3f-93df-388e3065ba45",
+      "name": "Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_EMAIL@gmail.com",
+        "subject": "=🚨 CRITICAL CVE — Action Required: {{ $json.cve_id }}",
+        "message": "=<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;\">\n\n  <div style=\"background-color: #b71c1c; padding: 15px; border-radius: 6px 6px 0 0;\">\n    <h2 style=\"color: white; margin: 0;\">🚨 CRITICAL CVE — Your Action Required</h2>\n  </div>\n\n  <div style=\"border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 6px 6px;\">\n\n    <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 20px;\">\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold; width: 40%;\">CVE ID</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.cve_id }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Software</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.affected_software }} {{ $json.affected_version }}</td>\n      </tr>\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold;\">CVSS Score</td>\n        <td style=\"padding: 8px 12px; color: #b71c1c; font-weight: bold;\">{{ $json.cvss_score }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">EPSS Score</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.epss_score }}</td>\n      </tr>\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold;\">KEV Listed</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.kev_listed ? 'Yes — Actively Exploited' : 'No' }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Patch Available</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.patch_available ? 'Yes' : 'No — No patch exists' }}</td>\n      </tr>\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold;\">PoC Exploit</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.exploit_available ? 'Available' : 'Not found' }}</td>\n      </tr>\n    </table>\n\n    <h3 style=\"color: #b71c1c; border-bottom: 2px solid #b71c1c; padding-bottom: 6px;\">Root Cause</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #b71c1c; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).root_cause.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #b71c1c; border-bottom: 2px solid #b71c1c; padding-bottom: 6px;\">Attack Steps</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #b71c1c; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).attack_steps.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #b71c1c; border-bottom: 2px solid #b71c1c; padding-bottom: 6px;\">Exploitation Conditions</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #b71c1c; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).exploitation_conditions.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #b71c1c; border-bottom: 2px solid #b71c1c; padding-bottom: 6px;\">Why Your System Is At Risk</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #b71c1c; border-radius: 4px;\">\n      {{ $json.exploitability_reason.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #b71c1c; border-bottom: 2px solid #b71c1c; padding-bottom: 6px;\">Risk Summary</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #b71c1c; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).risk_summary.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #1565c0; border-bottom: 2px solid #1565c0; padding-bottom: 6px;\">Patch Information</h3>\n    <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 20px;\">\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold; width: 40%;\">Fixed Version</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.fixed_version || 'None available' }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Upgrade Command</td>\n        <td style=\"padding: 8px 12px; font-family: monospace; background-color: #f0f0f0; color: #1a1a1a; border-radius: 4px; padding: 10px;\">{{ $json.upgrade_command || 'N/A' }}</td>\n      </tr>\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Workaround</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.workaround || 'None documented' }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Advisory</td>\n        <td style=\"padding: 8px 12px;\"><a href=\"{{ $json.vendor_advisory_url }}\" style=\"color: #1565c0;\">{{ $json.vendor_advisory_url || 'Not available' }}</a></td>\n      </tr>\n    </table>\n\n    <h3 style=\"color: #1565c0; border-bottom: 2px solid #1565c0; padding-bottom: 6px;\">Choose Your Action</h3>\n\n    <div style=\"text-align: center; margin: 30px 0;\">\n      <a href=\"{{ $execution.resumeUrl }}&decision=A&cve_id={{ $json.cve_id }}\"\n         style=\"display: inline-block; margin: 8px; padding: 14px 24px; background-color: #2e7d32; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;\">\n        A — Apply Workaround\n      </a>\n      <a href=\"{{ $execution.resumeUrl }}&decision=B&cve_id={{ $json.cve_id }}\"\n         style=\"display: inline-block; margin: 8px; padding: 14px 24px; background-color: #e65100; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;\">\n        B — Monitor Only\n      </a>\n      <a href=\"{{ $execution.resumeUrl }}&decision=C&cve_id={{ $json.cve_id }}\"\n         style=\"display: inline-block; margin: 8px; padding: 14px 24px; background-color: #c62828; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;\">\n        C — Ignore\n      </a>\n    </div>\n\n    <p style=\"margin-top: 30px; font-size: 12px; color: #999; text-align: center;\">\n      VulnWatch — Autonomous CVE Intelligence | Generated {{ $now.format('DD MMM YYYY HH:mm') }}\n    </p>\n\n  </div>\n</body>\n</html>\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        80
+      ],
+      "id": "bdada1e7-6471-44f0-93d1-1c92e2d2f2b2",
+      "name": "Send Email",
+      "webhookId": "282cc66b-d216-4a46-a794-2aef5518c4c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TBJYigu06B48ZxFs",
+          "name": "Gmail OAuth Job API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.query.decision }}",
+                    "rightValue": "A",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "07002942-8598-4c93-82c7-dd798b8386d8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Apply Workaround"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d47087d8-60a0-40dc-bc8b-a9bd9089805f",
+                    "leftValue": "={{ $json.query.decision }}",
+                    "rightValue": "B",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Monitor Only"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fa69631b-4dc9-46e5-abf2-3f3083186af5",
+                    "leftValue": "={{ $json.query.decision }}",
+                    "rightValue": "C",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ignore"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        64
+      ],
+      "id": "0ee3465a-bfba-463e-8aed-40d466627cd6",
+      "name": "Decision Router"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "cve_analyses",
+          "mode": "list",
+          "cachedResultName": "cve_analyses"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cve_id": "={{ $json.query.cve_id }}",
+            "hitl_decision": "workaround"
+          },
+          "matchingColumns": [
+            "cve_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cve_id",
+              "displayName": "cve_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "affected_software",
+              "displayName": "affected_software",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "affected_version",
+              "displayName": "affected_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvss_score",
+              "displayName": "cvss_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "epss_score",
+              "displayName": "epss_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "kev_listed",
+              "displayName": "kev_listed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploit_available",
+              "displayName": "exploit_available",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitable_on_this_system",
+              "displayName": "exploitable_on_this_system",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitability_reason",
+              "displayName": "exploitability_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitability_confidence",
+              "displayName": "exploitability_confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "patch_available",
+              "displayName": "patch_available",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fixed_version",
+              "displayName": "fixed_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "upgrade_command",
+              "displayName": "upgrade_command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "workaround",
+              "displayName": "workaround",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "vendor_advisory_url",
+              "displayName": "vendor_advisory_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "poc_url",
+              "displayName": "poc_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "claude_analysis",
+              "displayName": "claude_analysis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "alert_sent",
+              "displayName": "alert_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hitl_required",
+              "displayName": "hitl_required",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hitl_decision",
+              "displayName": "hitl_decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        896,
+        -112
+      ],
+      "id": "377c5472-513f-40ac-8fb0-ecfd19fd9332",
+      "name": "Apply Workaround:",
+      "credentials": {
+        "postgres": {
+          "id": "O3yWhcN6VoBt8OR5",
+          "name": "VulnWatch Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "cve_analyses",
+          "mode": "list",
+          "cachedResultName": "cve_analyses"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cve_id": "={{ $json.query.cve_id }}",
+            "hitl_decision": "monitor"
+          },
+          "matchingColumns": [
+            "cve_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cve_id",
+              "displayName": "cve_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "affected_software",
+              "displayName": "affected_software",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "affected_version",
+              "displayName": "affected_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvss_score",
+              "displayName": "cvss_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "epss_score",
+              "displayName": "epss_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "kev_listed",
+              "displayName": "kev_listed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploit_available",
+              "displayName": "exploit_available",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitable_on_this_system",
+              "displayName": "exploitable_on_this_system",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitability_reason",
+              "displayName": "exploitability_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitability_confidence",
+              "displayName": "exploitability_confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "patch_available",
+              "displayName": "patch_available",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fixed_version",
+              "displayName": "fixed_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "upgrade_command",
+              "displayName": "upgrade_command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "workaround",
+              "displayName": "workaround",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "vendor_advisory_url",
+              "displayName": "vendor_advisory_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "poc_url",
+              "displayName": "poc_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "claude_analysis",
+              "displayName": "claude_analysis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "alert_sent",
+              "displayName": "alert_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hitl_required",
+              "displayName": "hitl_required",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hitl_decision",
+              "displayName": "hitl_decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        896,
+        80
+      ],
+      "id": "51b435b3-03c3-4ede-aa9b-48984f41177e",
+      "name": "Monitor Only",
+      "credentials": {
+        "postgres": {
+          "id": "O3yWhcN6VoBt8OR5",
+          "name": "VulnWatch Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "cve_analyses",
+          "mode": "list",
+          "cachedResultName": "cve_analyses"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cve_id": "={{ $json.query.cve_id }}",
+            "hitl_decision": "ignore"
+          },
+          "matchingColumns": [
+            "cve_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cve_id",
+              "displayName": "cve_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "affected_software",
+              "displayName": "affected_software",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "affected_version",
+              "displayName": "affected_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvss_score",
+              "displayName": "cvss_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "epss_score",
+              "displayName": "epss_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "kev_listed",
+              "displayName": "kev_listed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploit_available",
+              "displayName": "exploit_available",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitable_on_this_system",
+              "displayName": "exploitable_on_this_system",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitability_reason",
+              "displayName": "exploitability_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "exploitability_confidence",
+              "displayName": "exploitability_confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "patch_available",
+              "displayName": "patch_available",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fixed_version",
+              "displayName": "fixed_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "upgrade_command",
+              "displayName": "upgrade_command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "workaround",
+              "displayName": "workaround",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "vendor_advisory_url",
+              "displayName": "vendor_advisory_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "poc_url",
+              "displayName": "poc_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "claude_analysis",
+              "displayName": "claude_analysis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "alert_sent",
+              "displayName": "alert_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hitl_required",
+              "displayName": "hitl_required",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hitl_decision",
+              "displayName": "hitl_decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        896,
+        272
+      ],
+      "id": "4a11b304-5011-4f6e-9f5d-0d91ecab49b5",
+      "name": "Ignore",
+      "credentials": {
+        "postgres": {
+          "id": "O3yWhcN6VoBt8OR5",
+          "name": "VulnWatch Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1344,
+        80
+      ],
+      "id": "eaaed873-b7e4-4305-824d-90f204ab952c",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "responseMode": "responseNode",
+        "limitWaitTime": true,
+        "resumeAmount": 48,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        80
+      ],
+      "id": "ec39635a-a7b2-4963-aeb6-2517a4421fb0",
+      "name": "Wait (hitl-response)",
+      "webhookId": "bdffd25c-0581-48f7-96c4-4986fb660361"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const decision = $('Wait (hitl-response)').item.json.query.decision;\nconst cveId = $('Wait (hitl-response)').item.json.query.cve_id;\n\nconst config = {\n  'A': { icon: '🔧', label: 'Apply Workaround', bg: '#1a3a4a', color: '#63b3ed' },\n  'B': { icon: '👁️', label: 'Monitor Only',     bg: '#2a2a1a', color: '#ecc94b' },\n  'C': { icon: '🚫', label: 'Ignore',           bg: '#4a1515', color: '#fc8181' }\n}[decision] || { icon: '✅', label: decision, bg: '#1a2f23', color: '#68d391' };\n\n\nconst html = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>VulnWatch</title>\n  <style>\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    body { font-family: -apple-system, sans-serif; background: #0f1117; color: #e2e8f0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }\n    .card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; padding: 48px 40px; max-width: 460px; width: 90%; text-align: center; }\n    .icon { font-size: 52px; margin-bottom: 20px; }\n    h1 { font-size: 22px; color: #f7fafc; margin-bottom: 10px; }\n    .sub { color: #718096; font-size: 14px; margin-bottom: 28px; }\n    .badge { display: inline-block; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px; background: ${config.bg}; color: ${config.color}; }\n    .cve { font-family: monospace; font-size: 13px; color: #68d391; background: #1a2f23; padding: 8px 16px; border-radius: 6px; display: inline-block; }\n    .footer { margin-top: 32px; font-size: 12px; color: #4a5568; }\n  </style>\n</head>\n<body>\n  <div class=\"card\">\n    <div class=\"icon\">${config.icon}</div>\n    <h1>Decision Recorded</h1>\n    <p class=\"sub\">VulnWatch has received your response.</p>\n    <div class=\"badge\">${config.label}</div>\n    <br/><br/>\n    <div class=\"cve\">${cveId}</div>\n    <p class=\"footer\">You can close this tab.</p>\n  </div>\n</body>\n</html>`;\n\nreturn { json: { html } };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        80
+      ],
+      "id": "19672232-4282-4cd9-8dde-4ae53f981f59",
+      "name": "Build Response HTML"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Wait (hitl-response)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision Router": {
+      "main": [
+        [
+          {
+            "node": "Apply Workaround:",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Monitor Only",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Workaround:": {
+      "main": [
+        [
+          {
+            "node": "Build Response HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor Only": {
+      "main": [
+        [
+          {
+            "node": "Build Response HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ignore": {
+      "main": [
+        [
+          {
+            "node": "Build Response HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (hitl-response)": {
+      "main": [
+        [
+          {
+            "node": "Decision Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Build Response HTML": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4ec6ce3d-ca23-4ecd-a14d-129625f286b5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "23b36ea15f13856ccbe210d20171d39de2bd8cd2a47658ef3391b4160d9fda3e"
+  },
+  "id": "MNKQWkxaEJaHREmK",
+  "tags": []
+}

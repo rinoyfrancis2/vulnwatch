@@ -1,0 +1,74 @@
+{
+  "name": "VulnWatch - Alert System",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "48c778a6-583f-49e4-a9c3-d0e475841f1e",
+      "name": "Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_EMAIL@gmail.com",
+        "subject": "=VulnWatch Alert: {{ $json.cve_id }} — Patch Available",
+        "message": "=<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;\">\n\n  <div style=\"background-color: #d32f2f; padding: 15px; border-radius: 6px 6px 0 0;\">\n    <h2 style=\"color: white; margin: 0;\">⚠️ VulnWatch Alert — Patch Available</h2>\n  </div>\n\n  <div style=\"border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 6px 6px;\">\n\n    <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 20px;\">\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold; width: 40%;\">CVE ID</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.cve_id }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Software</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.affected_software }} {{ $json.affected_version }}</td>\n      </tr>\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold;\">CVSS Score</td>\n        <td style=\"padding: 8px 12px; color: #d32f2f; font-weight: bold;\">{{ $json.cvss_score }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">EPSS Score</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.epss_score }}</td>\n      </tr>\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold;\">KEV Listed</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.kev_listed ? 'Yes — Actively Exploited' : 'No' }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">PoC Exploit</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.exploit_available ? 'Available' : 'Not found' }}</td>\n      </tr>\n    </table>\n\n    <h3 style=\"color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 6px;\">Root Cause</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #d32f2f; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).root_cause.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 6px;\">Attack Steps</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #d32f2f; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).attack_steps.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 6px;\">Exploitation Conditions</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #d32f2f; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).exploitation_conditions.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 6px;\">Risk Summary</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #d32f2f; border-radius: 4px;\">\n      {{ JSON.parse($json.claude_analysis).risk_summary.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 6px;\">Why Your System Is At Risk</h3>\n    <p style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #d32f2f; border-radius: 4px;\">\n      {{ $json.exploitability_reason.replace(/\\n/g, '<br>').replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') }}\n    </p>\n\n    <h3 style=\"color: #1565c0; border-bottom: 2px solid #1565c0; padding-bottom: 6px;\">Patch Information</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold; width: 40%;\">Fixed Version</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.fixed_version || 'None available' }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Upgrade Command</td>\n        <td style=\"padding: 8px 12px; font-family: monospace; background-color: #f0f0f0; color: #1a1a1a; border-radius: 4px; padding: 10px;\">{{ $json.upgrade_command || 'N/A' }}</td>\n      </tr>\n      <tr style=\"background-color: #f5f5f5;\">\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Workaround</td>\n        <td style=\"padding: 8px 12px;\">{{ $json.workaround || 'None documented' }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 12px; font-weight: bold;\">Advisory</td>\n        <td style=\"padding: 8px 12px;\"><a href=\"{{ $json.vendor_advisory_url }}\" style=\"color: #1565c0;\">{{ $json.vendor_advisory_url || 'Not available' }}</a></td>\n      </tr>\n    </table>\n\n    <p style=\"margin-top: 30px; font-size: 12px; color: #999; text-align: center;\">\n      VulnWatch — Autonomous CVE Intelligence | Generated {{ $now.format('DD MMM YYYY HH:mm') }}\n    </p>\n\n  </div>\n</body>\n</html>\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "78418d1f-a147-4608-8eb6-e5efaf8f92ea",
+      "name": "Send Alert Email",
+      "webhookId": "1d28ba08-05a1-4b89-9e0c-384ff63976a6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EWniJmxdb6qvURGg",
+          "name": "Gmail OAuth API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Alert Email": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d86b8c5e-9648-4242-bd59-bddb04daaf73",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "23b36ea15f13856ccbe210d20171d39de2bd8cd2a47658ef3391b4160d9fda3e"
+  },
+  "id": "6UiBfUIyoOzzsj0K",
+  "tags": []
+}
