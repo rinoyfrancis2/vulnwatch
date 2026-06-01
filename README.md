@@ -100,12 +100,10 @@ N8N cannot run these commands directly against its own host. Instead, VulnWatch 
 │  GitHub API → PoC Exploit Search (rate-limited, looped)  │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │         5-AGENT ORCHESTRATION CHAIN              │   │
-│  │  Mistral 7B    → Orchestrator (routing)          │   │
+│  │           3-AGENT ORCHESTRATION CHAIN            │   │
 │  │  Claude Sonnet → Analysis Agent (severity)       │   │
 │  │  Claude Sonnet → Validation Agent (exploitable?) │   │
 │  │  Claude Haiku  → Patch Agent (fix commands)      │   │
-│  │  Llama 3.1 70B → Bulk CVE Classification         │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                          │
 │  → Store all results in PostgreSQL + pgvector (on VPS)   │
@@ -209,13 +207,11 @@ Every Sunday at 9am, sends a digest of all low and medium severity CVEs from the
 
 | Agent | Model | What It Does |
 |---|---|---|
-| Orchestrator | Mistral 7B (OpenRouter) | Controls the full pipeline flow — routes between agents based on severity and data completeness |
 | Analysis Agent | Claude Sonnet 4.6 | Reasons about CVE severity in context — is this CVE relevant to the specific software version installed? |
 | Validation Agent | Claude Sonnet 4.6 | Confirms exploitability — are the exact conditions required for this CVE actually present on this system? |
 | Patch Agent | Claude Haiku 4.5 | Extracts fixed version, generates the exact upgrade command, finds workarounds for unpatched CVEs |
-| Classifier | Llama 3.1 70B (OpenRouter) | Bulk-classifies the initial CVE list before expensive API calls — routes only relevant CVEs forward |
 
-**Why different models?** Cost and quality are matched to task complexity. Claude Sonnet handles deep reasoning. Claude Haiku handles structured extraction. Mistral and Llama handle fast routing at near-zero cost. A single Claude Sonnet call for everything would cost 10× more with no benefit on classification tasks.
+**Why two different Claude models?** Cost and quality are matched to task complexity. Claude Sonnet 4.6 handles deep security reasoning where accuracy is critical. Claude Haiku 4.5 handles structured data extraction (patch versions, upgrade commands) where speed and cost matter — Haiku is ~20× cheaper than Sonnet for straightforward extraction tasks.
 
 ---
 
@@ -257,8 +253,6 @@ Every Sunday at 9am, sends a digest of all low and medium severity CVEs from the
 | PostgreSQL + pgvector | Local database on VPS — CVE records + vector embeddings |
 | Claude Sonnet 4.6 | Deep exploit reasoning + exploitability validation |
 | Claude Haiku 4.5 | Patch information extraction |
-| Mistral 7B (OpenRouter) | Orchestration routing |
-| Llama 3.1 70B (OpenRouter) | Bulk CVE classification |
 | OSV API | CVSS scores + fixed versions |
 | EPSS API (FIRST.org) | Exploitation probability |
 | CISA KEV | Active exploitation confirmation |
